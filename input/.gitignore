@@ -1,0 +1,7 @@
+GWTC-1_sample_release.tar.gz
+GWTC-1_sample_release/*
+all_posterior_samples.tar
+all_posterior_samples/*
+injections_O1O2an_spin.h5
+o3a_bbhpop_inj_info.hdf
+preprocessed_single_events/*
