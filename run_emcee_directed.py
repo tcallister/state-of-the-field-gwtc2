@@ -27,7 +27,7 @@ a2_std_min = 0.01
 a2_std_max = 1.
 
 # Dicts with samples: 
-sampleDict = np.load("/home/thomas.callister/Simona/o3a-spin-studies/Preprocessing/sampleDict_sampleRelease.pickle")
+sampleDict = np.load("/home/thomas.callister/CBC/state-of-the-field-gwtc2/input/sampleDict_sampleRelease.pickle")
 
 # Load mock detections
 ref_m_min = 2.
@@ -35,7 +35,7 @@ ref_m_max = 100.
 ref_a1 = -2.35
 ref_a2 = 2.
 
-mockDetections = h5py.File('/home/thomas.callister/Simona/o3a-spin-studies/Preprocessing/gstlal_o3a_bbhpop_o3a_bbhpop_inj_info.h5','r')
+mockDetections = h5py.File('/home/thomas.callister/CBC/state-of-the-field-gwtc2/input/o3a_bbhpop_inj_info.hdf5','r')
 ifar_1 = mockDetections['injections']['ifar_gstlal'].value
 ifar_2 = mockDetections['injections']['ifar_pycbc_bbh'].value
 ifar_3 = mockDetections['injections']['ifar_pycbc_full'].value
@@ -46,7 +46,7 @@ s1z_det = mockDetections['injections']['spin1z'].value[detected]
 s2z_det = mockDetections['injections']['spin2z'].value[detected]
 z_det = mockDetections['injections']['redshift'].value[detected]
 
-mockDetectionsO1O2 = h5py.File('/home/thomas.callister/RedshiftDistributions/spin-evolution/injections_O1O2an_spin.h5','r')
+mockDetectionsO1O2 = h5py.File('/home/thomas.callister/CBC/state-of-the-field-gwtc2/input/injections_O1O2an_spin.h5','r')
 m1_det = np.append(m1_det,mockDetectionsO1O2['mass1_source'])
 m2_det = np.append(m2_det,mockDetectionsO1O2['mass2_source'])
 s1z_det = np.append(s1z_det,mockDetectionsO1O2['spin1z'])
@@ -105,7 +105,7 @@ def logposterior(c):
 
         # Draw catalog
         try:
-            binaries = getPopRecursion(200,1.,a2_mean,a2_std,0.1,"polar_maxwellian",[10.**logv_parallel,10.**logv_perp,10.**logsig_perp])
+            binaries = getPopRecursion(300,1.,a2_mean,a2_std,0.1,"polar_maxwellian",[10.**logv_parallel,10.**logv_perp,10.**logsig_perp])
         except RuntimeError:
             print("Negligible survival...")
             return -np.inf

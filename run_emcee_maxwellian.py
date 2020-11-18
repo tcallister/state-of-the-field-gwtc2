@@ -27,7 +27,7 @@ a2_std_min = 0.01
 a2_std_max = 1.
 
 # Dicts with samples: 
-sampleDict = np.load("/home/thomas.callister/Simona/o3a-spin-studies/Preprocessing/sampleDict_sampleRelease.pickle")
+sampleDict = np.load("./input/sampleDict_sampleRelease.pickle")
 
 # Load mock detections
 ref_m_min = 2.
@@ -35,7 +35,7 @@ ref_m_max = 100.
 ref_a1 = -2.35
 ref_a2 = 2.
 
-mockDetections = h5py.File('/home/thomas.callister/Simona/o3a-spin-studies/Preprocessing/gstlal_o3a_bbhpop_o3a_bbhpop_inj_info.h5','r')
+mockDetections = h5py.File('./input/o3a_bbhpop_inj_info.hdf','r')
 ifar_1 = mockDetections['injections']['ifar_gstlal'].value
 ifar_2 = mockDetections['injections']['ifar_pycbc_bbh'].value
 ifar_3 = mockDetections['injections']['ifar_pycbc_full'].value
@@ -46,7 +46,7 @@ s1z_det = mockDetections['injections']['spin1z'].value[detected]
 s2z_det = mockDetections['injections']['spin2z'].value[detected]
 z_det = mockDetections['injections']['redshift'].value[detected]
 
-mockDetectionsO1O2 = h5py.File('/home/thomas.callister/RedshiftDistributions/spin-evolution/injections_O1O2an_spin.h5','r')
+mockDetectionsO1O2 = h5py.File('./input/injections_O1O2an_spin.h5','r')
 m1_det = np.append(m1_det,mockDetectionsO1O2['mass1_source'])
 m2_det = np.append(m2_det,mockDetectionsO1O2['mass2_source'])
 s1z_det = np.append(s1z_det,mockDetectionsO1O2['spin1z'])
@@ -87,15 +87,11 @@ pop_reweight[m2_det<mMin] = 0.
 def logposterior(c):
 
     # Read parameters
-    #logR = c[0]
-    #logv_parallel = c[0]
-    #logv_perp = c[1]
     logv = c[0]
     a2_mean = c[1]
     a2_std = c[2]
 
     # Flat priors, reject samples past boundaries
-    #if logv_parallel<logv_parallel_min or logv_parallel>logv_parallel_max or logv_perp<logv_perp_min or logv_perp>logv_perp_max or a2_mean<a2_mean_min or a2_mean>a2_mean_max or a2_std<a2_std_min or a2_std>a2_std_max:
     if logv<logv_parallel_min or logv>logv_parallel_max or a2_mean<a2_mean_min or a2_mean>a2_mean_max or a2_std<a2_std_min or a2_std>a2_std_max:
         return -np.inf
 
@@ -106,7 +102,7 @@ def logposterior(c):
 
         # Draw catalog
         try:
-            binaries,trials,sn,m,efficient = getPopRecursion(200,1.,a2_mean,a2_std,0.,"maxwellian",[10.**logv,10.**logv],1,efficiencyThreshold=1e-3)
+            binaries,trials,sn,m,efficient = getPopRecursion(300,1.0,a2_mean,a2_std,0.,"maxwellian",[10.**logv,10.**logv],0.9,efficiencyThreshold=1e-3)
         except RuntimeError:
             print("Negligible survival...")
             return -np.inf
@@ -118,14 +114,17 @@ def logposterior(c):
         chi_effectives = np.array([b.chi_effective() for b in binaries])
         chi_ps = np.array([b.chi_p() for b in binaries])
 
+        if np.any(chi_ps!=chi_ps):
+            print("Unphysical chi_p???",chi_ps[np.where(chi_ps!=chi_ps)])
+            return -np.inf
+        if np.any(chi_effectives!=chi_effectives):
+            print("Unphysical chi_eff???",chi_effectives[np.where(chi_effectives!=chi_effectives)])
+            return -np.inf
+
         chi_effective_kde = gaussian_kde(chi_effectives)
         chi_eff_grid = np.linspace(-1,1,200)
         chi_eff_norm = np.trapz(chi_effective_kde(chi_eff_grid),chi_eff_grid)
         
-        #chi_p_kde = gaussian_kde(chi_ps)
-        #chi_p_grid = np.linspace(0,1,200)
-        #chi_p_norm = np.trapz(chi_p_kde(chi_p_grid),chi_p_grid)
-
         chi_eff_p_kde = gaussian_kde([np.concatenate([chi_effectives,chi_effectives]),np.concatenate([chi_ps,-chi_ps])])
 
         nEvents = len(sampleDict)
@@ -148,9 +147,9 @@ def logposterior(c):
             spin_prior = sampleDict[event]['joint_priors']
             weights = sampleDict[event]['weights']
 
+            weights[(spin_prior<0)] = 0.
+
             # Chi probability
-            #p_chi = chi_effective_kde(Xeff_sample)*chi_p_kde(Xp_sample)/chi_eff_norm/chi_p_norm
-            #p_chi = chi_effective_kde(Xeff_sample)/chi_eff_norm
             p_chi = chi_eff_p_kde([Xeff_sample,Xp_sample])
 
             # Evaluate marginalized likelihood
@@ -159,6 +158,9 @@ def logposterior(c):
             
             # Summation
             logP += np.log(pEvidence)
+
+            if logP!=logP:
+                print(event,np.where(spin_prior<0))
 
         print(c,logP)
         return logP
@@ -169,13 +171,9 @@ if __name__=="__main__":
     # Initialize walkers from random positions in mu-sigma2 parameter space
     nWalkers = 32
 
-    #initial_logR = np.random.random(nWalkers)*0.3+1.
-    #initial_v_parallels = np.random.random(nWalkers)+2.
-    #initial_v_perps = np.random.random(nWalkers)+3.
     initial_v = np.random.random(nWalkers)+2.
     initial_a2_means = np.random.random(nWalkers)*0.3
     initial_a2_stds = np.random.random(nWalkers)*0.3+0.3
-    #initial_walkers = np.transpose([initial_v_parallels,initial_v_perps,initial_a2_means,initial_a2_stds])
     initial_walkers = np.transpose([initial_v,initial_a2_means,initial_a2_stds])
     
     print('Initial walkers:')
@@ -185,9 +183,9 @@ if __name__=="__main__":
     dim = 3
 
     # Run
-    nSteps = 3000
+    nSteps = 4000
     sampler = mc.EnsembleSampler(nWalkers,dim,logposterior,threads=16)
     for i,result in enumerate(sampler.sample(initial_walkers,iterations=nSteps)):
         if i%10==0:
-            np.save('emcee_samples_maxwellian_perfectAlignment.npy',sampler.chain)
-    np.save('emcee_samples_maxwellian_perfectAlignment.npy',sampler.chain)
+            np.save('output/emcee_samples_maxwellian_beta0.9_perfectAlignment.npy',sampler.chain)
+    np.save('output/emcee_samples_maxwellian_beta0.9_perfectAlignment.npy',sampler.chain)

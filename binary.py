@@ -25,19 +25,24 @@ ref_F *= (48./19.)/np.power(g_e,4.)
 
 # Approximate F(e) valid at low eccentricities
 ref_F_lowEcc = np.power(ref_eccs,48./19.)/np.power(g_e,4.)
+ref_F_lowEcc[0] = 1.
 
 class binary():
         
     def __init__(self,m1,m2,a1,a2,t1,t2,phi1,phi2,semi_a):
 
-        self.m1 = float(m1)
-        self.m2 = float(m2)
+        #self.m1 = float(m1)
+        #self.m2 = float(m2)
+        self.m1 = m1
+        self.m2 = m2
         self.a1 = a1
         self.a2 = a2
         self.s1_hat = np.array([np.sin(t1)*np.cos(phi1),np.sin(t1)*np.sin(phi1),np.cos(t1)])
         self.s2_hat = np.array([np.sin(t2)*np.cos(phi2),np.sin(t2)*np.sin(phi2),np.cos(t2)])
-        self.semi_a = float(semi_a)
-        self.initial_semi_a = float(semi_a)
+        #self.semi_a = float(semi_a)
+        #self.initial_semi_a = float(semi_a)
+        self.semi_a = semi_a
+        self.initial_semi_a = semi_a
         self.L_hat = np.array([0,0,1])
         self.eccentricity = 0.
 

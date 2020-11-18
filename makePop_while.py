@@ -69,7 +69,9 @@ def genTruncatedNorm(n,mu,sig,low,high):
         ts[replace] = genTruncatedNorm(ts[replace].size,mu,sig,low,high)
         return ts
 
-def getPopRecursion(n,logR_mean,a2_mean,a2_std,dtilt,kick,kick_args,beta,efficiencyThreshold=1e-3):
+def getPopRecursion(n,logR_mean,a2_mean,a2_std,dtilt,kick,kick_args,beta,efficiencyThreshold=1e-3,dist='logUniform'):
+
+    genTime = 0.
 
     mMax = 75.
     mMin = 5.
@@ -102,10 +104,16 @@ def getPopRecursion(n,logR_mean,a2_mean,a2_std,dtilt,kick,kick_args,beta,efficie
         m2 = np.power((m1**(1.+bq)-mMin**(1.+bq))*np.random.random(n)+mMin**(1.+bq),1./(1.+bq))/beta
 
         # Separation
-        sep = 10.**(np.log10(5.) + (np.log10(300)-np.log10(5.))*np.random.random(n))
-        #sep = 10.**np.random.normal(loc=1.1,scale=0.3,size=n)
+        if dist=='logUniform':
+            sep = 10.**(np.log10(5.) + (np.log10(300)-np.log10(5.))*np.random.random(n))
+        elif dist=='logNormal':
+            sep = 10.**np.random.normal(loc=1.1,scale=0.3,size=n)
+        elif dist=='delta':
+            sep = 10.**logR_mean*np.ones(n)
+        else:
+            sys.exit()
 
-        binaries = np.array([binary(m1[i],m2[i],a1[i],a2[i],t1[i],t2[i],phi1[i],phi2[i],sep[i]*Rsun) for i in range(n)])
+        binaries = [binary(m1[i],m2[i],a1[i],a2[i],t1[i],t2[i],phi1[i],phi2[i],sep[i]*Rsun) for i in range(n)]
 
         if kick=="maxwellian":
             survived = np.array([b.kick(random_kick(*kick_args),beta) for b in binaries])
@@ -119,28 +127,36 @@ def getPopRecursion(n,logR_mean,a2_mean,a2_std,dtilt,kick,kick_args,beta,efficie
         merge += np.where(mergerTimes<1)[0].size
 
         successful = ((survived==1)*(mergerTimes<1))
-        final_binaries = np.append(final_binaries,binaries[successful])
-        survival_fraction = 1.*final_binaries.size/trials
-        error = 1./np.sqrt(final_binaries.size)
+        final_binaries = np.append(final_binaries,np.array(binaries)[successful])
 
-        if (trials>1./efficiencyThreshold) and (survival_fraction<efficiencyThreshold):
+        # Estimate success probability
+        # If none have yet been successful, take an upper limit of 1/trials
+        p_hat = max(1.*final_binaries.size/trials,1./trials)
+        error = np.sqrt(p_hat*(1.-p_hat)/trials)
+        if (trials>1./efficiencyThreshold) and (efficiencyThreshold-p_hat)/error > 3:
             return final_binaries,trials,surviveSN,merge,False
 
     return final_binaries,trials,surviveSN,merge,True
 
 if __name__=="__main__":
-
+    
+    """
     times = np.array([])
     for i in range(10):
         t_start = time.time()
         try:
-            getPopRecursion(1000,3.0,0.5,0.5,0.1,"maxwellian",[30,100])
+            a2_mean = 0.5
+            a2_std = 0.5
+            final_binaries,trials,surviveSN,merge,efficient = getPopRecursion(1000,3.0,a2_mean,a2_std,0.,"maxwellian",[100,100],0.9)
+            if efficient==False:
+                print("not efficient")
         except RuntimeError:
             print(":(")
         t_stop = time.time()
         times = np.append(times,t_stop-t_start)
     print(times)
     print(np.mean(times),np.std(times))
+    """
 
     """
     ecc = np.array([bb.eccentricity for bb in b])
