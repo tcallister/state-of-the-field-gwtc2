@@ -1,10 +1,10 @@
-\newcommand{\fSNTwoupper}{0.24}
-\newcommand{\fSNTwolower}{0.003}
-\newcommand{\fMergelower}{0.76}
-\newcommand{\fMergeupper}{0.91}
+\newcommand{\fSNTwoupper}{0.25}
+\newcommand{\fSNTwolower}{0.002}
+\newcommand{\fMergelower}{0.78}
+\newcommand{\fMergeupper}{0.93}
 
-\newcommand{\sigmaEfficiencyLimit}{1695.6}
-\newcommand{\fMergeupperRestricted}{0.90}
-\newcommand{\fSNTwolowerRestricted}{0.02}
+\newcommand{\sigmaEfficiencyLimit}{1772.7}
+\newcommand{\fMergeupperRestricted}{0.91}
+\newcommand{\fSNTwolowerRestricted}{0.01}
 
-\newcommand{\fCELowerLimit}{0.005}
+\newcommand{\fCELowerLimit}{0.004}
